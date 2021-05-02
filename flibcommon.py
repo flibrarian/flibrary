@@ -296,6 +296,8 @@ def process_characters(s, translit):
 def get_display_sequence(book):
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
+			if u'любимые книги льва толстого' in seq.name.lower():
+				continue
 			return seq
 	return None
 
