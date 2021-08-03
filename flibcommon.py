@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import re, hashlib, zipfile, sys, os, ConfigParser, traceback, platform
+import re, hashlib, zipfile, sys, os, configparser, traceback, platform
 import simplejson as json
 from collections import namedtuple
 from lxml import etree
@@ -13,9 +13,9 @@ def ini_path():
 def read_config_values(keys, types, errors):
 	config_path = ini_path()
 	if not os.path.exists(config_path):
-		errors.append(u'Конфигурационный файл (%s) не найден' % config_path)
+		errors.append('Конфигурационный файл (%s) не найден' % config_path)
 	try:
-		config = ConfigParser.ConfigParser()
+		config = configparser.ConfigParser()
 		config.read(config_path)
 		values = []
 		for k, t in zip(keys, types):
@@ -26,12 +26,12 @@ def read_config_values(keys, types, errors):
 			elif t == bool:
 				values.append(config.getboolean('FLIBCONFIG', k))
 			elif t == str:
-				values.append(config.get('FLIBCONFIG', k).decode('utf-8'))#unicode
+				values.append(config.get('FLIBCONFIG', k))
 			else:
 				values.append(None)
 		return values
 	except Exception as e:	
-		errors.append(u'Ошибка при чтении конфигурационного файла')
+		errors.append('Ошибка при чтении конфигурационного файла')
 		raise e
 
 def log_filename():
@@ -48,9 +48,9 @@ def namedtuple_from_json(d):
 
 def read_dump_compressed(name, errors):
 	if not os.path.exists(name):
-		errors.append(u'Дамп-файл отсутствует')
+		errors.append('Дамп-файл отсутствует')
 		return None
-	generic_dump_error = u'Ошибка при чтении дамп-файла'
+	generic_dump_error = 'Ошибка при чтении дамп-файла'
 	try:
 		with zipfile.ZipFile(name, 'r') as zf:
 			if 'library.json' not in zf.namelist() or 'version' not in zf.namelist():
@@ -60,9 +60,9 @@ def read_dump_compressed(name, errors):
 				if library == None:
 					raise Exception()
 				with zf.open('version') as versf:
-					version = versf.read().strip()
+					version = versf.read().decode('utf-8').strip()
 					if version != VERSION:
-						errors.append(u'Версия дамп-файла "%s" не поддерживается' % version)
+						errors.append('Версия дамп-файла "%s" не поддерживается' % version)
 						return None
 					return library
 	except Exception:
@@ -70,9 +70,9 @@ def read_dump_compressed(name, errors):
 		return None
 
 def write_dump_compressed(name, library):
-	print_header(u'ПОДГОТОВКА ДАМП-ФАЙЛА')
+	print_header('ПОДГОТОВКА ДАМП-ФАЙЛА')
 	data = json.dumps(library, ensure_ascii=False, indent=1).encode("utf-8")
-	print_header(u'ЗАПИСЬ ДАМП-ФАЙЛА, НЕ ПРЕРЫВАЙТЕ ПРОГРАММУ')
+	print_header('ЗАПИСЬ ДАМП-ФАЙЛА, НЕ ПРЕРЫВАЙТЕ ПРОГРАММУ')
 	with zipfile.ZipFile(name, "w", zipfile.ZIP_DEFLATED) as zf:
 		zf.writestr("library.json", data)
 		zf.writestr("version", "%s" % VERSION)
@@ -82,9 +82,9 @@ def body_hash(tree):
 	nss = root.nsmap
 	bodies = ''
 	for b in root.findall("./body", namespaces=nss):
-		bodies += etree.tostring(b, encoding='utf-8', method='xml')
+		bodies += etree.tostring(b, encoding='unicode', method='xml')
 	m = hashlib.md5()
-	m.update(bodies)
+	m.update(bodies.encode("utf-8"))
 	return m.hexdigest()
 
 def estimate_pages(tree):
@@ -99,8 +99,8 @@ def estimate_pages(tree):
 		elements.extend(root.findall('.//%s' % tag, namespaces=nss))
 	for element in elements:
 		parlen = len(''.join(element.itertext()).strip())
-		parnum += -(-parlen / SYMBOLS_IN_LINE)
-	return -(-parnum / LINES_IN_PAGE)
+		parnum += -(-parlen // SYMBOLS_IN_LINE)
+	return -(-parnum // LINES_IN_PAGE)
 
 
 def author_from_xml(element, nss):
@@ -266,17 +266,17 @@ def write_errors(filename, errors):
 	except OSError:
 		pass
 	if errors:
-		with open(filename, 'w') as errf:
+		with open(filename, 'w', encoding="utf-8") as errf:
 			for error in errors:
-				errf.write(error.encode('utf-8') + "\r\n")
-		print u'Были обнаружены проблемы: подробности в файле %s' % filename
+				errf.write(error + "\r\n")
+		print('Были обнаружены проблемы: подробности в файле %s' % filename)
 	if platform.system() == 'Windows':
-		raw_input(u'Нажмите ENTER для завершения программы.'.encode(sys.stdout.encoding))
+		input('Нажмите ENTER для завершения программы.')
 
 def process_characters(s, translit):
 	trans = ''
 	for ch in s:
-		if ch.lower() in TRANSLIT_MAP.keys():
+		if ch.lower() in list(TRANSLIT_MAP.keys()):
 			if not translit:
 				trans += ch
 			else:
@@ -296,7 +296,7 @@ def process_characters(s, translit):
 def get_display_sequence(book):
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
-			if u'любимые книги льва толстого' in seq.name.lower():
+			if 'любимые книги льва толстого' in seq.name.lower():
 				continue
 			return seq
 	return None
@@ -322,7 +322,7 @@ def build_filename(book, translit):
 		if a.middle:
 			author_part = a.middle
 			break
-	if author_part and author_part.lower() != u'автор неизвестен' and author_part.lower() != u'автор' and author_part.lower() != u'неизвестен':
+	if author_part and author_part.lower() != 'автор неизвестен' and author_part.lower() != 'автор' and author_part.lower() != 'неизвестен':
 		filename_parts.append(author_part)
 
 	seq = get_display_sequence(book)
@@ -336,22 +336,22 @@ def build_filename(book, translit):
 	return "%s.%d.fb2" % (base, book.id)
 
 def yes_or_no(question):
-	question = question + u' (y/n): '
-	question = question.encode(sys.stdout.encoding)
+	question = question + ' (y/n): '
+#	question = question.encode(sys.stdout.encoding)
 	while True:
-		reply = str(raw_input(question)).lower().strip()
+		reply = str(input(question)).lower().strip()
 		if reply and reply[0] == 'y':
 			return True
 		elif reply and reply[0] == 'n':
 			return False
 
 def print_exception():
-	print_header(u'КРИТИЧЕСКАЯ ОШИБКА')
+	print_header('КРИТИЧЕСКАЯ ОШИБКА')
 	traceback.print_exc()
 			
 def print_header(header):
-	print
-	print "!" + header + "!"
-	print "=" * (len(header)+2)
+	print()
+	print("!" + header + "!")
+	print("=" * (len(header)+2))
 
 

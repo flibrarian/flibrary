@@ -9,15 +9,15 @@ def load_sql_book(book, cur, errors):
 		return book
 	cur.execute("SELECT Title, Lang, Year, Deleted, Pages FROM libbook WHERE BookId=%d" % book.id)
 	title, lang, year, deleted, pages = cur.fetchone()
-	title = title.decode('utf-8')
-	lang = lang.decode('utf-8')
+	title = title
+	lang = lang
 	year = None if year == 0 else str(year)
 	if deleted == 1:
-		errors.append(u'Книга #%d ("%s") была удалена из библиотеки' % (book.id, book.description.title ))
+		errors.append('Книга #%d ("%s") была удалена из библиотеки' % (book.id, book.description.title ))
 		
 	cur.execute("SELECT realId FROM libjoinedbooks WHERE BadId=%d" % book.id)
 	if cur.fetchone():
-		errors.append(u'Книга #%d ("%s") была заменена на другую версию' % (book.id, book.description.title ))
+		errors.append('Книга #%d ("%s") была заменена на другую версию' % (book.id, book.description.title ))
 	
 	authors = []
 	translators = []
@@ -32,7 +32,7 @@ def load_sql_book(book, cur, errors):
 		aid = row[0]
 		pos = row[1]
 		cur.execute("SELECT FirstName, MiddleName, LastName FROM libavtorname WHERE AvtorId=%d" % aid)
-		author = Author(*[x.decode('utf-8') if x else None for x in cur.fetchone()])
+		author = Author(*[x if x else None for x in cur.fetchone()])
 		sorted_authors.append((author, pos))
 	authors = [a for a, _ in sorted(sorted_authors, key=lambda tup: tup[1])]
 	
@@ -43,7 +43,7 @@ def load_sql_book(book, cur, errors):
 		tid = row[0]
 		pos = row[1]
 		cur.execute("SELECT FirstName, MiddleName, LastName FROM libavtorname WHERE AvtorId=%d" % tid)
-		author = Author(*[x.decode('utf-8') if x else None for x in cur.fetchone()])
+		author = Author(*[x if x else None for x in cur.fetchone()])
 		sorted_translators.append((author, pos))
 	translators = [a for a, _ in sorted(sorted_translators, key=lambda tup: tup[1])]
 	
@@ -52,7 +52,7 @@ def load_sql_book(book, cur, errors):
 	for row in rows:
 		gid = row[0]
 		cur.execute("SELECT GenreCode FROM libgenrelist WHERE GenreId=%d" % gid)
-		genre = cur.fetchone()[0].decode('utf-8')
+		genre = cur.fetchone()[0]
 		genres.append(genre)
 	
 	cur.execute("SELECT SeqId, SeqNumb, Type FROM libseq WHERE BookId=%d" % book.id)
@@ -66,7 +66,7 @@ def load_sql_book(book, cur, errors):
 		sq_tmp = cur.fetchone()
 		if not sq_tmp:
 			break
-		sequence = Sequence(sq_tmp[0].decode('utf-8'), sn)
+		sequence = Sequence(sq_tmp[0], sn)
 		if is_p:
 			psequences.append(sequence)
 		else:
@@ -74,7 +74,7 @@ def load_sql_book(book, cur, errors):
 	
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
 	if description != book.description:
-		print u'Обновлено: %s' % title
+		print('Обновлено: %s' % title)
 	return Book(book.id, description, book.bodyhash, pages)
 		
 def update_directory(d, cur, errors):
@@ -103,12 +103,12 @@ def main():
 			['DUMP_FILE_PATH', 'MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE', 'MYSQL_PORT'],
 			[str, str, str, str, str, int],
 			errors)
-		connection = pymysql.connect(host, user, password, database, port)
+		connection = pymysql.connect(host=host, user=user, password=password, database=database, port=port)
 		library = read_dump_compressed(dumpfile_path, errors)
 		new_library = update_library(library, connection, errors)
 		connection.close()
 		write_dump_compressed(dumpfile_path, new_library)
-		print_header(u'ВСЁ СДЕЛАНО')
+		print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
 		print_exception()
 	finally:

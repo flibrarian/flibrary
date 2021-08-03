@@ -29,7 +29,7 @@ def write_level(data, flib_url):
 	source = ''
 	for subdir in sorted(data.subdirs):
 		nb, nd = calculate_size(subdir)
-		subdirsize = u' (%d кн. / %d дир.)' % (nb, nd) if nd else u' (%d кн.)' % nb
+		subdirsize = ' (%d кн. / %d дир.)' % (nb, nd) if nd else ' (%d кн.)' % nb
 		title = "<b>%s</b>" % subdir.name + subdirsize
 		source += HTML_DIRSTART_TEMPLATE % title
 		source += ''
@@ -42,12 +42,12 @@ def write_level(data, flib_url):
 		title_display = "<b>%s</b>" % book.description.title
 		astr = authors_str(book.description.authors)
 		if astr:
-			title_sort += u" -- %s" % astr
-			title_display += u" -- <i>%s</i>" % astr
+			title_sort += " -- %s" % astr
+			title_display += " -- <i>%s</i>" % astr
 		tstr = authors_str(book.description.translators)
 		if tstr:
-			title_sort += u" (пер. %s)" % tstr
-			title_display += u' <small><i style="font-stretch: ultra-condensed">(пер. %s)</i></small>' % tstr
+			title_sort += " (пер. %s)" % tstr
+			title_display += ' <small><i style="font-stretch: ultra-condensed">(пер. %s)</i></small>' % tstr
 		seq = get_display_sequence(book)
 		if seq:
 			title_sort = ('[%s - %02d] ' % (seq.name, int(seq.number))) + title_sort
@@ -56,15 +56,15 @@ def write_level(data, flib_url):
 		title_display_map[book.id] = title_display
 	for book in sorted(data.books, key=lambda x: title_sort_map[x.id]):
 		link = flib_url + ("/" if flib_url[-1] != "/" else "") + "b/" + str(book.id)
-		source += HTML_BOOKLINE_TEMPLATE % (link, title_display_map[book.id], u" (%d стр.)" % book.pages)
+		source += HTML_BOOKLINE_TEMPLATE % (link, title_display_map[book.id], " (%d стр.)" % book.pages)
 	return source
 
 def write_html(library, flib_url, name):
-	with open(name, 'w') as htmlf:
+	with open(name, 'w', encoding="utf-8") as htmlf:
 		source = write_level(library.root, flib_url)
 		nb, nd = calculate_size(library.root)
-		libsizestr = u' (%d кн. / %d дир.)' % (nb, nd)
-		htmlf.write((HTML_TEMPLATE % (libsizestr, source)).encode('utf-8'))
+		libsizestr = ' (%d кн. / %d дир.)' % (nb, nd)
+		htmlf.write((HTML_TEMPLATE % (libsizestr, source)))
 
 def main():
 	errors = []
@@ -76,7 +76,7 @@ def main():
 		library = read_dump_compressed(dumpfile_path, errors)
 		if library:
 			write_html(library, flib_url, 'library.html')
-			print_header(u'ВСЁ СДЕЛАНО')
+			print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
 		print_exception()
 	finally:

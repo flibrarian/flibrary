@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, urllib2, io, shutil
+import os, urllib.request, urllib.error, urllib.parse, io, shutil
 from lxml import etree
 from flibdefs import *
 from flibcommon import *
@@ -16,9 +16,9 @@ def extract_book(book, tree, path, extractdata):
 	new_book_path = os.path.join(path, fb2zip_name)
 	
 	if os.path.exists(new_book_path):
-		print ' ^ %s' % (fb2zip_name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), fb2zip_name))
+		print(' ^ %s' % (fb2zip_name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), fb2zip_name)))
 	else:
-		print ' + %s' % (fb2zip_name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), fb2zip_name))
+		print(' + %s' % (fb2zip_name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), fb2zip_name)))
 	
 	inside_name = build_filename(book, True)
 
@@ -32,9 +32,9 @@ def extract_book(book, tree, path, extractdata):
 			with open(new_book_path, 'rb') as zfo:
 				new_tree = read_book_zip(zfo)
 				if body_hash(new_tree) != book.bodyhash:
-					extractdata.errors.append(u'Контрольная сумма не совпадает: %s' % new_book_path)
+					extractdata.errors.append('Контрольная сумма не совпадает: %s' % new_book_path)
 		except Exception:
-			extractdata.errors.append(u'Контрольная сумма не совпадает: %s' % new_book_path)
+			extractdata.errors.append('Контрольная сумма не совпадает: %s' % new_book_path)
 
 def check_local_file(book, path, quick, translit):
 	try:
@@ -72,14 +72,14 @@ def clear_duplicates(book, path, extractdata):
 		if name != fb2zip_name and os.path.isfile(os.path.join(path, name)):
 			mo = BOOKFILE_PATTERN.match(name)
 			if mo and int(mo.group(2)) == book.id:
-				print ' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name))
+				print(' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name)))
 				os.remove(os.path.join(path, name))
 
 def try_extract_book(book, directory, path, extractdata):
 	fb2zip_name = "%s.zip" % build_filename(book, extractdata.translit)
 	if check_local_file(book, path, extractdata.quick, extractdata.translit):
 		return fb2zip_name
-	if book.id in extractdata.idmap.keys():
+	if book.id in list(extractdata.idmap.keys()):
 		arch = extractdata.idmap[book.id]
 		with zipfile.ZipFile(arch, 'r') as zf:
 			with zf.open("%d.fb2" % book.id) as f:
@@ -103,9 +103,9 @@ def try_extract_book(book, directory, path, extractdata):
 	return None
 
 def remove_or_cache(name, path, extractdata):
-	print ' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name))
+	print(' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name)))
 	mo = BOOKFILE_PATTERN.match(name)
-	if mo and int(mo.group(2)) not in extractdata.idmap.keys():
+	if mo and int(mo.group(2)) not in list(extractdata.idmap.keys()):
 		try:
 			shutil.move(os.path.join(path, name), os.path.join(extractdata.cache_path, name))
 			return
@@ -118,7 +118,7 @@ def remove_or_cache(name, path, extractdata):
 
 def extract_directory(directory, path, extractdata):
 	if not extractdata.quick:
-		print path
+		print(path)
 	if not os.path.exists(path):
 		os.makedirs(path)
 	valid_files = []
@@ -145,10 +145,10 @@ def extract_directory(directory, path, extractdata):
 					for filename in files:
 						remove_or_cache(filename, root, extractdata)
 				shutil.rmtree(os.path.join(path, name))
-				print ' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name))
+				print(' - %s' % (name if not extractdata.quick else os.path.join(os.path.relpath(path, extractdata.extract_path), name)))
 
 def extract_library(library, extractdata):
-	print_header(u'РАСПАКОВКА КНИГ')
+	print_header('РАСПАКОВКА КНИГ')
 	extract_directory(library.root,  extractdata.extract_path, extractdata)
 
 def reuse_cached(extractdata):
@@ -174,26 +174,26 @@ def load_archive(name):
 	return content
 
 def load_archives(directory):
-	print_header(u'ЧТЕНИЕ АРХИВОВ')
-	archs = filter(lambda x: FBARCH_PATTERN.match(x), os.listdir(directory))
+	print_header('ЧТЕНИЕ АРХИВОВ')
+	archs = [x for x in os.listdir(directory) if FBARCH_PATTERN.match(x)]
 	idmap = {}
-	print u'%d архивов найдено' % len(archs)
+	print('%d архивов найдено' % len(archs))
 	for arch in sorted(archs):
 		arch = os.path.join(directory, arch)
 		for n in load_archive(arch):
 			idmap[n] = arch
 	if archs:
-		print u'архивы прочитаны'
+		print('архивы прочитаны')
 	return idmap
 
 def download_book(link, book, path, extractdata):
-	print u'Загрузка: ' + link
+	print('Загрузка: ' + link)
 	try:
-		response = urllib2.urlopen(link)
+		response = urllib.request.urlopen(link)
 		remote_name = response.geturl().split("/")[-1]
 		if not BOOKFILE_PATTERN.match(remote_name):
-			extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, u'Неожиданное имя файла: ' + remote_name))
-			print u'Неожиданное имя файла: ' + remote_name
+			extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, 'Неожиданное имя файла: ' + remote_name))
+			print('Неожиданное имя файла: ' + remote_name)
 			return
 		if not os.path.exists(path):
 			os.makedirs(path)
@@ -201,26 +201,26 @@ def download_book(link, book, path, extractdata):
 		tree = read_book_zip(fo)
 		extract_book(book, tree, path, extractdata)
 	except Exception as e:
-		print u'Ошибка сети:'
-		print e
-		extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, u'Ошибка сети'))
+		print('Ошибка сети:')
+		print(e)
+		extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, 'Ошибка сети'))
 
 def download_absent(flib_url, extractdata):
 	if extractdata.absent_books:
-		print_header(u'ЗАГРУЗКА ОТСУТСТВУЮЩИХ КНИГ')
-		ans = yes_or_no(u"%d книг не найдено в архивах. Загрузить с сайта?" % len(extractdata.absent_books))
+		print_header('ЗАГРУЗКА ОТСУТСТВУЮЩИХ КНИГ')
+		ans = yes_or_no("%d книг не найдено в архивах. Загрузить с сайта?" % len(extractdata.absent_books))
 		n = 25
 		for i in range(0, len(extractdata.absent_books), n):
 			chunk = extractdata.absent_books[i:i + n]
 			if ans:
-				print u'Загрузка книг %d-%d из %d' % (i + 1, i + len(chunk), len(extractdata.absent_books))
+				print('Загрузка книг %d-%d из %d' % (i + 1, i + len(chunk), len(extractdata.absent_books)))
 			for book, path in chunk:
 				link = flib_url + ("/" if flib_url[-1] != "/" else "") + "b/" + str(book.id) + "/fb2"
 				if ans:
 					download_book(link, book, path, extractdata)
 				else:
-					extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, u'Отменено пользователем'))
-			ans = i + n < len(extractdata.absent_books) and ans and yes_or_no(u"Продолжить загрузку?")
+					extractdata.errors.append(DOWNLOAD_ERROR_TEMPLATE % (link, path, 'Отменено пользователем'))
+			ans = i + n < len(extractdata.absent_books) and ans and yes_or_no("Продолжить загрузку?")
 			
 
 def main():
@@ -232,28 +232,28 @@ def main():
 			[str,str,str,str,str,bool,bool],
 			errors)
 		if not os.path.exists(arch_path):
-			errors.append(u"Директория ARCHIVE_PATH (%s) не найдена" % arch_path)
+			errors.append("Директория ARCHIVE_PATH (%s) не найдена" % arch_path)
 			return
 
 		if not os.path.exists(extract_path):
-			ans = yes_or_no(u"Директория EXTRACT_TO_PATH (%s) отсутствует.\r\nСоздать директорию и продолжить?" % extract_path)
+			ans = yes_or_no("Директория EXTRACT_TO_PATH (%s) отсутствует.\r\nСоздать директорию и продолжить?" % extract_path)
 			if not ans:
 				return
 
 		if os.path.exists(extract_path) and os.listdir(extract_path):
-			ans = yes_or_no(u"Директория EXTRACT_TO_PATH (%s) не пуста.\r\nПосторонние файлы будут удалены! Продолжить?" % extract_path)
+			ans = yes_or_no("Директория EXTRACT_TO_PATH (%s) не пуста.\r\nПосторонние файлы будут удалены! Продолжить?" % extract_path)
 			if not ans:
 				return
 		else:
 			quick = False
 
 		if quick:
-			print_header(u'РЕЖИМ БЫСТРОГО ОБНОВЛЕНИЯ')
+			print_header('РЕЖИМ БЫСТРОГО ОБНОВЛЕНИЯ')
 		library = read_dump_compressed(dumpfile_path, errors)
 		if library:
 			idmap = load_archives(arch_path)
 			if not idmap:
-				ans = yes_or_no(u"Архивы не найдены. Продолжить без них?")	
+				ans = yes_or_no("Архивы не найдены. Продолжить без них?")
 				if not ans:
 					return		
 			cache_dir = '.flib_cache_' + ini_path().replace('.', '_')
@@ -264,7 +264,7 @@ def main():
 			extract_library(library, extractdata)
 			reuse_cached(extractdata)
 			download_absent(flib_url, extractdata)
-			print_header(u'ВСЁ СДЕЛАНО')
+			print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
 		print_exception()
 	finally:

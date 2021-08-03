@@ -9,7 +9,7 @@ def read_file(path, old_dir, dumpdata):
 	name = os.path.basename(path)
 	mo = BOOKFILE_PATTERN.match(name)
 	if not mo:
-		dumpdata.errors.append(u'Пропущен файл: %s' % (path))
+		dumpdata.errors.append('Пропущен файл: %s' % (path))
 		return None
 	try:
 		bookid = int(mo.group(2))
@@ -20,17 +20,17 @@ def read_file(path, old_dir, dumpdata):
 		with open(path, 'rb') as zfo:
 			tree = read_book_zip(zfo)
 			book = load_book_info(bookid, tree)
-			print ' + %s' % os.path.join(os.path.dirname(os.path.relpath(path, dumpdata.dump_path)), build_filename(book, dumpdata.translit) + ".zip")
+			print(' + %s' % os.path.join(os.path.dirname(os.path.relpath(path, dumpdata.dump_path)), build_filename(book, dumpdata.translit) + ".zip"))
 			return book
 	except Exception as e:
-		dumpdata.errors.append(u'Ошибка при чтении файла: %s' % (path))
+		dumpdata.errors.append('Ошибка при чтении файла: %s' % (path))
 		return None
 
 def read_directory(d, old_dir, dumpdata):
 	if not dumpdata.quick:
-		print d
-	dirs = sorted(filter(lambda x: os.path.isdir(os.path.join(d, x)), os.listdir(d)))
-	files = sorted(filter(lambda x: os.path.isfile(os.path.join(d, x)), os.listdir(d)))
+		print(d)
+	dirs = sorted([x for x in os.listdir(d) if os.path.isdir(os.path.join(d, x))])
+	files = sorted([x for x in os.listdir(d) if os.path.isfile(os.path.join(d, x))])
 	subdirs = []
 	books = []
 	for f in files:
@@ -45,10 +45,10 @@ def read_directory(d, old_dir, dumpdata):
 	if old_dir:
 		for book in old_dir.books:
 			if not next((b for b in books if b.id == book.id), None):
-				print ' - %s' % os.path.join(os.path.relpath(d, dumpdata.dump_path), build_filename(book, dumpdata.translit) + ".zip")
+				print(' - %s' % os.path.join(os.path.relpath(d, dumpdata.dump_path), build_filename(book, dumpdata.translit) + ".zip"))
 		for sd in old_dir.subdirs:
 			if not next((dd for dd in subdirs if dd.name == sd.name), None) if old_dir else None:
-				print ' - %s' % os.path.join(os.path.relpath(d, dumpdata.dump_path), sd.name)
+				print(' - %s' % os.path.join(os.path.relpath(d, dumpdata.dump_path), sd.name))
 	
 	if subdirs or books:
 		return Directory(os.path.basename(d), subdirs, sorted(books, key=lambda b: b.id))
@@ -56,7 +56,7 @@ def read_directory(d, old_dir, dumpdata):
 		return None
 
 def dump_library(old_library, dumpdata, dumpfile_path):
-	print_header(u'ЧТЕНИЕ БИБЛИОТЕКИ')
+	print_header('ЧТЕНИЕ БИБЛИОТЕКИ')
 	root = read_directory(dumpdata.dump_path, old_library.root if old_library else None, dumpdata)
 	library = Library(root)
 	write_dump_compressed(dumpfile_path, library)
@@ -69,14 +69,14 @@ def main():
 			[str, str, bool, bool],
 			errors)
 		if not os.path.exists(read_path):
-			errors.append(u"Директория DUMP_FROM_PATH (%s) не найдена" % read_path)
+			errors.append("Директория DUMP_FROM_PATH (%s) не найдена" % read_path)
 		else:
 			old_library = read_dump_compressed(dumpfile_path, []) if quick else None
-			dumpdata = Dumpdata(old_library != None, errors, unicode(read_path), translit)
+			dumpdata = Dumpdata(old_library != None, errors, str(read_path), translit)
 			if dumpdata.quick:
-				print_header(u'РЕЖИМ БЫСТРОГО ОБНОВЛЕНИЯ')
+				print_header('РЕЖИМ БЫСТРОГО ОБНОВЛЕНИЯ')
 			dump_library(old_library, dumpdata, dumpfile_path)
-			print_header(u'ВСЁ СДЕЛАНО')
+			print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
 		print_exception()
 	finally:
