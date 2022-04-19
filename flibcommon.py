@@ -294,11 +294,32 @@ def process_characters(s, translit):
 	return trans
 
 def get_display_sequence(book):
+	sequences_to_skip = ['любимые книги льва толстого',
+		'антология детской литературы',
+		'антология восточной литературы',
+		'антология поэзии',
+		'антология фантастики',
+		'антология детектива',
+		'антология ужасов',
+		'антология приключений',
+		'антология зарубежной классики',
+		'антология любовного романа',
+		'антология научно-популярной литературы',
+		'антология о животных и природе',
+		'антология юмора',
+		'антология русской классики',
+		'антология современной прозы',
+		'антология духовной мысли',
+		'антология советской литературы',
+		'антология военной литературы']
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
-			if 'любимые книги льва толстого' in seq.name.lower():
-				continue
-			return seq
+			skip = False
+			for ss in sequences_to_skip:
+				if ss in seq.name.lower():
+					skip = True
+			if not skip:
+				return seq
 	return None
 
 def cut_unicode(s, size):

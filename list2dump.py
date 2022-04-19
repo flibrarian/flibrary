@@ -19,6 +19,8 @@ def read_list(filename):
 				if mo:
 					bookid = int(mo.group(2))
 			if bookid == -1:
+				if line:
+					print("error line: ", line)
 				continue
 			cur_data = data
 			for part in parts[:-1]:

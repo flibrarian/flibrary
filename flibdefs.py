@@ -27,7 +27,7 @@ Sequence = namedtuple('Sequence', 'name number')
 Library = namedtuple('Library', 'root')
 
 BOOKFILE_PATTERN = re.compile("(.*?)\.([0-9]+?)\.fb2\.zip$")
-FBARCH_PATTERN = re.compile("^((f|d)\.)?fb2-[0-9]+-[0-9]+\.zip$")
+FBARCH_PATTERN = re.compile("^((f|d)\.)?fb2[\-\.][0-9]+-[0-9]+\.zip$")
 FBARCH_BOOK_PATTERN = re.compile("^[0-9]+\.fb2$")
 
 TRANSLIT_MAP = {}
