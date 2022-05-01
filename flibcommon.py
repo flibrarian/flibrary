@@ -356,6 +356,13 @@ def build_filename(book, translit):
 	base = cut_unicode(base, 240)
 	return "%s.%d.fb2" % (base, book.id)
 
+def compare_descriptions(descr1, descr2):
+	if descr1 == descr2:
+		return True
+	descr1_sorted = Description(descr1.title, descr1.authors, descr1.translators, sorted(descr1.genres), sorted(descr1.sequences), sorted(descr1.psequences), descr1.lang, descr1.year)
+	descr2_sorted = Description(descr2.title, descr2.authors, descr2.translators, sorted(descr2.genres), sorted(descr2.sequences), sorted(descr2.psequences), descr2.lang, descr2.year)
+	return descr1_sorted == descr2_sorted
+
 def yes_or_no(question):
 	question = question + ' (y/n): '
 #	question = question.encode(sys.stdout.encoding)

@@ -47,7 +47,7 @@ def check_local_file(book, path, quick, translit):
 		with open(new_book_path, 'rb') as zfo:
 			tree = read_book_zip(zfo)
 			local_book = load_book_info(book.id, tree)
-			return book.description == local_book.description and book.bodyhash == local_book.bodyhash
+			return compare_descriptions(book.description, local_book.description) and book.bodyhash == local_book.bodyhash
 	except Exception as e:
 		return False
 
