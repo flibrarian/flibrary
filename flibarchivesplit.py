@@ -4,6 +4,7 @@ from flibdefs import *
 from flibcommon import *
 
 GENRES_TO_IGNORE = ('love_short', 'love_sf', 'love_detective', 'love_hard', 'love_contemporary', 'love_erotica', 'fanfiction', 'sf_litrpg', 'popadancy')
+METAS_TO_SPLIT = ('Проза', 'Фантастика', 'Наука, Образование', 'Поэзия', 'Дом и семья', 'Детективы и Триллеры', 'Приключения', 'Документальная литература', 'Религия, духовность, эзотерика')
 
 def load_archive(name):
 	content = []
@@ -114,7 +115,11 @@ def get_category(book, genremap):
 	if not book.description.genres:
 		return None
 	g = book.description.genres[0]
-	return genremap[g][1]
+	meta = genremap[g][1]
+	if meta in METAS_TO_SPLIT:
+		return '%s - %s' % (meta, genremap[g][0])
+	else:
+		return meta
 
 def is_selfpub(tree):
 	root = tree.getroot()

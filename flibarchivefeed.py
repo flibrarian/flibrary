@@ -13,8 +13,7 @@ BOOK_FEED_TEMPLATE = '''
 <div><p class="genre">
 %s
 </p>
-<img src="%s/znak.gif" alt="файл не оценен" title="файл не оценен" width="15px" height="15px" border="0"><input type="checkbox" id="130,31-" name="bchk%d"> -  
-<a href="%s/b/%d">%s</a>
+<a href="%s/b/%d"><b>%s</b></a>
 %s
 %s
 <span style="size">%dK, %d с.</span>
@@ -152,7 +151,7 @@ def write_cat_feed(content, cat_path, genremap, flib_url):
 			sequences = ''
 			if book.description.sequences or book.description.psequences:
 				sequences = BOOK_FEED_SEQUENCES_TEMPLATE % (', '.join([BOOK_FEED_SEQUENCE_NUMBERED_TEMPLATE % (flib_url, sid, s.name, s.number) if s.number else BOOK_FEED_SEQUENCE_TEMPLATE % (flib_url, sid, s.name) for s, sid in zip(book.description.sequences + book.description.psequences, sids + psids)]))
-			book_feed = BOOK_FEED_TEMPLATE % (genres, flib_url, book.id, flib_url, book.id, book.description.title, translators, sequences, fsize / 1000, book.pages, filepath, authors, anno)
+			book_feed = BOOK_FEED_TEMPLATE % (genres, flib_url, book.id, book.description.title, translators, sequences, fsize / 1000, book.pages, filepath, authors, anno)
 			book_feeds.append(book_feed)
 		page = PAGE_TEMPLATE % ('\n'.join(book_feeds))
 		page = page.replace('//', '/')
@@ -183,7 +182,7 @@ def process_cat(cat_path, cur, genremap, flib_url):
 			book, fsize, aids, tids, sids, psids = update_and_get_more_info(book, cur)
 			anno = get_annotation(book.id, cur)
 			content.append((book, path, anno, fsize, aids, tids, sids, psids))
-	content.sort(key=lambda tup: tup[0].id)
+#	content.sort(key=lambda tup: tup[0].id)
 	write_cat_feed(content, cat_path, genremap, flib_url)		
 
 def process_feed(cur, feed_path, flib_url):
