@@ -311,7 +311,8 @@ def get_display_sequence(book):
 		'антология современной прозы',
 		'антология духовной мысли',
 		'антология советской литературы',
-		'антология военной литературы']
+		'антология военной литературы',
+		'антология романса']
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
 			skip = False
@@ -353,6 +354,8 @@ def build_filename(book, translit):
 	
 	filename_parts.append(book.description.title)
 	base = '_'.join([process_characters(s, translit) for s in filename_parts])
+	if len(base) > 1 and base[0] == '-':
+		base = base[1:]
 	base = cut_unicode(base, 240)
 	return "%s.%d.fb2" % (base, book.id)
 
