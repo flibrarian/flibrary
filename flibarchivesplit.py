@@ -152,11 +152,14 @@ def extract_book(book, tree, path, translit):
 def process_books(idmap, cur, feed_path, translit, errors):
 	genremap = load_genremap(cur)
 	for n in sorted(idmap.keys()):
+		print(n)
 		arch = idmap[n]
 		with zipfile.ZipFile(arch, 'r') as zf:
 			with zf.open("%d.fb2" % n) as f:
 				tree = read_book_xml(f)
 				book = load_book_info(n, tree)
+				if not book:
+					continue
 				book = load_sql_book(book, cur, errors)
 				if not book:
 					continue
@@ -169,7 +172,6 @@ def process_books(idmap, cur, feed_path, translit, errors):
 						break
 				if ignore_book:
 					continue
-				print(n)
 				selfpub = is_selfpub(tree) or 'network_literature' in book.description.genres
 				cat = get_category(book, genremap)
 				if not cat:
