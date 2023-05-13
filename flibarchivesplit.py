@@ -96,7 +96,15 @@ def load_sql_book(book, cur, errors):
 			psequences.append(sequence)
 		else:
 			sequences.append(sequence)
-	
+	if not authors:
+		authors = book.description.authors
+	if not translators:
+		translators = book.description.translators
+	if not genres:
+		genres = book.description.genres
+	if not sequences and not psequences:
+		sequences = book.description.sequences
+		psequences = book.description.psequences
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
 	return Book(book.id, description, book.bodyhash, pages)
 
@@ -114,12 +122,15 @@ def load_genremap(cur):
 def get_category(book, genremap):
 	if not book.description.genres:
 		return None
-	g = book.description.genres[0]
-	meta = genremap[g][1]
-	if meta in METAS_TO_SPLIT:
-		return '%s - %s' % (meta, genremap[g][0])
-	else:
-		return meta
+	for g in book.description.genres:
+		if g not in genremap.keys():
+			continue
+		meta = genremap[g][1]
+		if meta in METAS_TO_SPLIT:
+			return '%s - %s' % (meta, genremap[g][0])
+		else:
+			return meta
+	return None
 
 def is_selfpub(tree):
 	root = tree.getroot()

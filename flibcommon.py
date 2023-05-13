@@ -196,6 +196,16 @@ def load_book_info(bookid, tree):
 	
 	return Book(bookid, Description(title, authors, translators, genres, sequences, psequences, lang, year), body_hash(tree), estimate_pages(tree))
 
+def load_annotation(tree):
+	root = tree.getroot()
+	nss = root.nsmap
+	format3 = "%s/%s/%s"
+	
+	anno_list = root.findall(format3 % (DESCRIPTION_PATH, TITLE_INFO_TAG, ANNOTATION_TAG), namespaces=nss)
+	if len(anno_list) == 0:
+		return None
+	return etree.tostring(anno_list[0], encoding='unicode', method='xml')
+
 def update_book_info(tree, book):
 	root = tree.getroot()
 	nss = root.nsmap

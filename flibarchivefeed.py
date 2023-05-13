@@ -28,7 +28,7 @@ BOOK_FEED_TEMPLATE = '''
 PAGE_TEMPLATE = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" class="js" lang="ru"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Последние поступления | Флибуста</title>
+  <title>%s | Флибуста</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <link type="text/css" rel="stylesheet" media="all" href="../css.css">
 </head>
@@ -36,7 +36,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "htt
 <div id="page" class="one-sidebar">
 <div id="container" class=" withright clear-block">   
 <div id="main-wrapper"><div id="main" class="clear-block">
-<h1 class="title">Последние поступления</h1>
+<h1 class="title">%s</h1>
 %s
 <br>
 </div></div>
@@ -127,6 +127,19 @@ def update_and_get_more_info(book, cur):
 			sequences.append(sequence)
 			seq_ids.append(sid)
 
+	if not authors:
+		authors = book.description.authors
+		author_ids = [None for x in authors]
+	if not translators:
+		translators = book.description.translators
+		translator_ids = [None for x in translators]
+	if not authors:
+		authors = book.description.authors
+	if not sequences and not psequences:
+		sequences = book.description.sequences
+		psequences = book.description.psequences
+		seq_ids = [None for x in sequences]
+		pseq_ids = [None for x in psequences]
 	description = Description(book.description.title, authors, translators, book.description.genres, sequences, psequences, book.description.lang, book.description.year)
 	return Book(book.id, description, book.bodyhash, pages), filesize, author_ids, translator_ids, seq_ids, pseq_ids
 
@@ -138,22 +151,41 @@ def author_name(a):
 			s += ' ' + part
 	return s
 
-def write_cat_feed(content, cat_path, genremap, flib_url):
+def author_link(flib_url, aid, aname):
+	if aid:
+		return BOOK_FEED_AUTHOR_TEMPLATE % (flib_url, aid, aname)
+	else:
+		return aname
+
+def sequence_link(flib_url, sid, sname, snumber):
+	if sid:
+		if snumber:
+			return BOOK_FEED_SEQUENCE_NUMBERED_TEMPLATE % (flib_url, sid, sname, snumber)
+		else:
+			return BOOK_FEED_SEQUENCE_TEMPLATE % (flib_url, sid, sname)
+	else:
+		if snumber:
+			return '%s - %s' % (sname, snumber)
+		else:
+			return sname
+
+
+def write_cat_feed(content, cat_path, cat_name, genremap, flib_url):
 	path = os.path.join(cat_path, 'feed.html')
 	book_feeds = []
 	with open(path, 'w') as feed:
 		for book, filepath, anno, fsize, aids, tids, sids, psids in content:
-			authors = ' - '.join([BOOK_FEED_AUTHOR_TEMPLATE % (flib_url, aid, author_name(a)) for a, aid in zip(book.description.authors, aids)])
-			genres = ', '.join([BOOK_FEED_GENRE_TEMPLATE % (g, genremap[g][0]) for g in book.description.genres])
+			authors = ' - '.join([author_link(flib_url, aid, author_name(a)) for a, aid in zip(book.description.authors, aids)])
+			genres = ', '.join([BOOK_FEED_GENRE_TEMPLATE % (g, genremap[g][0] if g in genremap.keys() else g) for g in book.description.genres])
 			translators = ''
 			if book.description.translators:
-				translators = BOOK_FEED_TRANSLATORS_TEMPLATE % (','.join([BOOK_FEED_AUTHOR_TEMPLATE % (flib_url, tid, author_name(a)) for a, tid in zip(book.description.translators, tids)]))
+				translators = BOOK_FEED_TRANSLATORS_TEMPLATE % (','.join([author_link(flib_url, tid, author_name(a)) for a, tid in zip(book.description.translators, tids)]))
 			sequences = ''
 			if book.description.sequences or book.description.psequences:
-				sequences = BOOK_FEED_SEQUENCES_TEMPLATE % (', '.join([BOOK_FEED_SEQUENCE_NUMBERED_TEMPLATE % (flib_url, sid, s.name, s.number) if s.number else BOOK_FEED_SEQUENCE_TEMPLATE % (flib_url, sid, s.name) for s, sid in zip(book.description.sequences + book.description.psequences, sids + psids)]))
+				sequences = BOOK_FEED_SEQUENCES_TEMPLATE % (', '.join([sequence_link(flib_url, sid, s.name, s.number) for s, sid in zip(book.description.sequences + book.description.psequences, sids + psids)]))
 			book_feed = BOOK_FEED_TEMPLATE % (genres, flib_url, book.id, book.description.title, translators, sequences, fsize / 1000, book.pages, filepath, authors, anno)
 			book_feeds.append(book_feed)
-		page = PAGE_TEMPLATE % ('\n'.join(book_feeds))
+		page = PAGE_TEMPLATE % (cat_name, cat_name, '\n'.join(book_feeds))
 		page = page.replace('//', '/')
 		feed.write(page)
 
@@ -167,29 +199,30 @@ def read_file(path):
 		with open(path, 'rb') as zfo:
 			tree = read_book_zip(zfo)
 			book = load_book_info(bookid, tree)
-			return book
+			anno = load_annotation(tree)
+			return book, anno
 	except Exception as e:
-		return None
+		return None, None
 
-def process_cat(cat_path, cur, genremap, flib_url):
+def process_cat(cat_path, cat_name, cur, genremap, flib_url):
 	print(cat_path)
 	content = []
-	files = sorted([x for x in os.listdir(cat_path) if os.path.isfile(os.path.join(cat_path, x))])
+	files = sorted([x for x in os.listdir(cat_path) if x.endswith('.fb2.zip') and os.path.isfile(os.path.join(cat_path, x))])
 	for f in files:
 		path = os.path.join(cat_path, f)
-		book = read_file(path)
+		book, file_anno = read_file(path)
 		if book:
 			book, fsize, aids, tids, sids, psids = update_and_get_more_info(book, cur)
 			anno = get_annotation(book.id, cur)
-			content.append((book, path, anno, fsize, aids, tids, sids, psids))
+			content.append((book, path, anno if anno else file_anno, fsize, aids, tids, sids, psids))
 #	content.sort(key=lambda tup: tup[0].id)
-	write_cat_feed(content, cat_path, genremap, flib_url)		
+	write_cat_feed(content, cat_path, cat_name, genremap, flib_url)		
 
 def process_feed(cur, feed_path, flib_url):
 	genremap = load_genremap(cur)
 	dirs = sorted([x for x in os.listdir(feed_path) if os.path.isdir(os.path.join(feed_path, x))])
 	for d in dirs:
-		process_cat(os.path.join(feed_path, d), cur, genremap, flib_url)
+		process_cat(os.path.join(feed_path, d), d, cur, genremap, flib_url)
 
 
 def main():

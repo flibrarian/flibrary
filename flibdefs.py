@@ -18,6 +18,7 @@ GENRE_TAG = "genre"
 SEQUENCE_TAG = "sequence"
 LANG_TAG = "lang"
 YEAR_TAG = "year"
+ANNOTATION_TAG = "annotation"
 
 Directory = namedtuple('Directory', 'name subdirs books')
 Book = namedtuple('Book', 'id description bodyhash pages')
