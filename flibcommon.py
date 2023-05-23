@@ -140,19 +140,19 @@ def replace_elements(parent, element_name, new_elements, nss):
 def read_book_xml(xfo):
 	parser = etree.XMLParser(remove_blank_text=True)
 	return etree.parse(xfo, parser)
-	
+
 def read_book_zip(fo):
 	with zipfile.ZipFile(fo, 'r') as zfo:
 		if len(zfo.namelist()) != 1:
 			raise Exception()
+		fs = zfo.getinfo(zfo.namelist()[0]).file_size
 		with zfo.open(zfo.namelist()[0]) as xfo:
-			return read_book_xml(xfo)
+			return read_book_xml(xfo), fs
 
 def load_book_info(bookid, tree):
 	root = tree.getroot()
 	nss = root.nsmap
 	format3 = "%s/%s/%s"
-	
 	title_list = root.findall(format3 % (DESCRIPTION_PATH, TITLE_INFO_TAG, BOOK_TITLE_TAG), namespaces=nss)
 	if len(title_list) == 0:
 		return None

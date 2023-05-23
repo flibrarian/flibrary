@@ -142,5 +142,6 @@ HTML_DIRSTART_TEMPLATE = '<li><span class="caret">%s</span>\n<ul class="nested">
 HTML_DIREND_TEMPLATE = '</ul>\n</li>\n'
 
 DOWNLOAD_ERROR_TEMPLATE = 'Ошибка при загрузке %s в %s : %s'
+HEAD_ERROR_TEMPLATE = 'Ошибка при получении данных из %s : %s'
 
 

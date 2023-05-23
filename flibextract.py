@@ -30,7 +30,7 @@ def extract_book(book, tree, path, extractdata):
 	if body_hash(tree) != book.bodyhash:
 		try:
 			with open(new_book_path, 'rb') as zfo:
-				new_tree = read_book_zip(zfo)
+				new_tree, fs = read_book_zip(zfo)
 				if body_hash(new_tree) != book.bodyhash:
 					extractdata.errors.append('Контрольная сумма не совпадает: %s' % new_book_path)
 		except Exception:
@@ -45,7 +45,7 @@ def check_local_file(book, path, quick, translit):
 		if quick:
 			return True
 		with open(new_book_path, 'rb') as zfo:
-			tree = read_book_zip(zfo)
+			tree, fs = read_book_zip(zfo)
 			local_book = load_book_info(book.id, tree)
 			return compare_descriptions(book.description, local_book.description) and book.bodyhash == local_book.bodyhash
 	except Exception as e:
@@ -58,7 +58,7 @@ def try_get_old_file(book, path):
 				mo = BOOKFILE_PATTERN.match(name)
 				if mo and int(mo.group(2)) == book.id:
 					with open(os.path.join(path, name), 'rb') as zfo:
-						tree = read_book_zip(zfo)
+						tree, fs = read_book_zip(zfo)
 						local_book = load_book_info(book.id, tree)
 						if local_book.bodyhash == book.bodyhash:
 							return tree
@@ -198,7 +198,7 @@ def download_book(link, book, path, extractdata):
 		if not os.path.exists(path):
 			os.makedirs(path)
 		fo = io.BytesIO(response.read())
-		tree = read_book_zip(fo)
+		tree, fs = read_book_zip(fo)
 		extract_book(book, tree, path, extractdata)
 	except Exception as e:
 		print('Ошибка сети:')

@@ -6,7 +6,7 @@ from flibcommon import *
 def load_sql_book(book, cur, errors):
 	cur.execute("SELECT Title FROM libbook WHERE BookId=%d" % book.id)
 	if not cur.fetchone():
-		return book
+		return None
 	cur.execute("SELECT Title, Lang, Year, Deleted, Pages FROM libbook WHERE BookId=%d" % book.id)
 	title, lang, year, deleted, pages = cur.fetchone()
 	title = title
@@ -77,22 +77,28 @@ def load_sql_book(book, cur, errors):
 		print('Обновлено: %s' % title)
 	return Book(book.id, description, book.bodyhash, pages)
 		
-def update_directory(d, cur, errors):
+def update_directory(d, cur, errors, missedbookids):
 	books = []
 	subdirs = []
 	for book in d.books:
-		books.append(update_book(book, cur, errors))
+		books.append(update_book(book, cur, errors, missedbookids))
 	for sd in d.subdirs:
-		subdirs.append(update_directory(sd, cur, errors))
+		subdirs.append(update_directory(sd, cur, errors, missedbookids))
 	return Directory(d.name, subdirs, books)
-	
 
-def update_book(book, cur, errors):
-	return load_sql_book(book, cur, errors)
 
-def update_library(library, con, errors):
+def update_book(book, cur, errors, missedbookids):
+	db_book = load_sql_book(book, cur, errors)
+	if db_book:
+		return db_book
+	else:
+#		print('Книга %s (%s) не найдена в базе' % (book.id, book.description.title))
+		missedbookids.append(book.id)
+		return book
+
+def update_library(library, con, errors, missedbookids):
 	with con.cursor() as cur:
-		root = update_directory(library.root, cur, errors)
+		root = update_directory(library.root, cur, errors, missedbookids)
 		return Library(root)
 
 
@@ -105,9 +111,14 @@ def main():
 			errors)
 		connection = pymysql.connect(host=host, user=user, password=password, database=database, port=port)
 		library = read_dump_compressed(dumpfile_path, errors)
-		new_library = update_library(library, connection, errors)
+		missedbookids = []
+		new_library = update_library(library, connection, errors, missedbookids)
 		connection.close()
 		write_dump_compressed(dumpfile_path, new_library)
+		if missedbookids:
+			with open('missedbookids.txt', 'w') as f:
+				print('%d книг не найдено в базе' % len(missedbookids))
+				f.write('\n'.join([str(x) for x in sorted(missedbookids)]))
 		print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
 		print_exception()

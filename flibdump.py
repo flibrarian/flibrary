@@ -18,7 +18,7 @@ def read_file(path, old_dir, dumpdata):
 			if old_book:
 				return old_book
 		with open(path, 'rb') as zfo:
-			tree = read_book_zip(zfo)
+			tree, fs = read_book_zip(zfo)
 			book = load_book_info(bookid, tree)
 			print(' + %s' % os.path.join(os.path.dirname(os.path.relpath(path, dumpdata.dump_path)), build_filename(book, dumpdata.translit) + ".zip"))
 			return book

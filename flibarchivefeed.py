@@ -5,8 +5,11 @@ from flibcommon import *
 
 BOOK_FEED_GENRE_TEMPLATE = '<a href="#" class="genre" name="%s">%s</a>'
 BOOK_FEED_AUTHOR_TEMPLATE = '<a href="%s/a/%d">%s</a>'
+BOOK_FEED_AUTHOR_NOLINK_TEMPLATE = '<a href="#">%s</a>'
 BOOK_FEED_SEQUENCE_TEMPLATE = '<a href="%s/s/%d"><span class="h8">%s</span></a>'
 BOOK_FEED_SEQUENCE_NUMBERED_TEMPLATE = '<a href="%s/s/%d"><span class="h8">%s</span></a> - %s'
+BOOK_FEED_SEQUENCE_NOLINK_TEMPLATE = '<a href="#"><span class="h8">%s</span></a>'
+BOOK_FEED_SEQUENCE_NOLINK_NUMBERED_TEMPLATE = '<a href="#"><span class="h8">%s</span></a> - %s'
 BOOK_FEED_SEQUENCES_TEMPLATE = ' (%s)'
 BOOK_FEED_TRANSLATORS_TEMPLATE = ' (пер. %s)'
 BOOK_FEED_TEMPLATE = '''
@@ -65,12 +68,16 @@ def get_annotation(bookid, cur):
 	except Exception:
 		return ''	#TODO: get from tree
 
-def get_filesize(bookid, cur):
-	cur.execute("SELECT FileSize FROM libbook WHERE BookId=%d" % bookid)
-	return cur.fetchone()[0]
 
-
-def update_and_get_more_info(book, cur):
+def update_and_get_more_info(book, cur, fs):
+	cur.execute("SELECT Title FROM libbook WHERE BookId=%d" % book.id)
+	if not cur.fetchone():
+		authors = book.description.authors
+		author_ids = [None for x in book.description.authors]
+		translator_ids = [None for x in book.description.translators]
+		seq_ids = [None for x in book.description.sequences]
+		pseq_ids = [None for x in book.description.psequences]
+		return book, fs, author_ids, translator_ids, seq_ids, pseq_ids
 	cur.execute("SELECT FileSize, Pages FROM libbook WHERE BookId=%d" % book.id)
 	filesize, pages = cur.fetchone()
 
@@ -155,7 +162,7 @@ def author_link(flib_url, aid, aname):
 	if aid:
 		return BOOK_FEED_AUTHOR_TEMPLATE % (flib_url, aid, aname)
 	else:
-		return aname
+		return BOOK_FEED_AUTHOR_NOLINK_TEMPLATE % (aname)
 
 def sequence_link(flib_url, sid, sname, snumber):
 	if sid:
@@ -165,9 +172,9 @@ def sequence_link(flib_url, sid, sname, snumber):
 			return BOOK_FEED_SEQUENCE_TEMPLATE % (flib_url, sid, sname)
 	else:
 		if snumber:
-			return '%s - %s' % (sname, snumber)
+			return BOOK_FEED_SEQUENCE_NOLINK_NUMBERED_TEMPLATE % (sname, snumber)
 		else:
-			return sname
+			return BOOK_FEED_SEQUENCE_NOLINK_TEMPLATE % (sname)
 
 
 def write_cat_feed(content, cat_path, cat_name, genremap, flib_url):
@@ -197,12 +204,12 @@ def read_file(path):
 	try:
 		bookid = int(mo.group(2))
 		with open(path, 'rb') as zfo:
-			tree = read_book_zip(zfo)
+			tree, fs = read_book_zip(zfo)
 			book = load_book_info(bookid, tree)
 			anno = load_annotation(tree)
-			return book, anno
+			return book, anno, fs
 	except Exception as e:
-		return None, None
+		return None, None, None
 
 def process_cat(cat_path, cat_name, cur, genremap, flib_url):
 	print(cat_path)
@@ -210,9 +217,9 @@ def process_cat(cat_path, cat_name, cur, genremap, flib_url):
 	files = sorted([x for x in os.listdir(cat_path) if x.endswith('.fb2.zip') and os.path.isfile(os.path.join(cat_path, x))])
 	for f in files:
 		path = os.path.join(cat_path, f)
-		book, file_anno = read_file(path)
+		book, file_anno, fs = read_file(path)
 		if book:
-			book, fsize, aids, tids, sids, psids = update_and_get_more_info(book, cur)
+			book, fsize, aids, tids, sids, psids = update_and_get_more_info(book, cur, fs)
 			anno = get_annotation(book.id, cur)
 			content.append((book, path, anno if anno else file_anno, fsize, aids, tids, sids, psids))
 #	content.sort(key=lambda tup: tup[0].id)
