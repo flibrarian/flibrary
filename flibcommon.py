@@ -323,7 +323,9 @@ def get_display_sequence(book):
 		'антология советской литературы',
 		'антология военной литературы',
 		'антология романса',
-		'антология сказок']
+		'антология сказок',
+		'антология драматургии',
+		'антология мистики и фантастики']
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
 			skip = False
