@@ -33,7 +33,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "htt
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>%s | Флибуста</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <link type="text/css" rel="stylesheet" media="all" href="../css.css">
+  <link type="text/css" rel="stylesheet" media="all" href="../../css.css">
 </head>
 <body id="second">
 <div id="page" class="one-sidebar">
@@ -220,7 +220,8 @@ def process_cat(cat_path, cat_name, cur, genremap, flib_url):
 		book, file_anno, fs = read_file(path)
 		if book:
 			book, fsize, aids, tids, sids, psids = update_and_get_more_info(book, cur, fs)
-			anno = get_annotation(book.id, cur)
+#			anno = get_annotation(book.id, cur) #way too long
+			anno = None
 			content.append((book, path, anno if anno else file_anno, fsize, aids, tids, sids, psids))
 #	content.sort(key=lambda tup: tup[0].id)
 	write_cat_feed(content, cat_path, cat_name, genremap, flib_url)		
