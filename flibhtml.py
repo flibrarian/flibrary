@@ -39,7 +39,7 @@ def write_level(data, flib_url):
 	title_display_map = {}
 	for book in data.books:
 		title_sort = book.description.title
-		title_display = "<b>%s</b>" % book.description.title
+		title_display = "<b>%s</b>" % book.description.title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 		astr = authors_str(book.description.authors)
 		if astr:
 			title_sort += " -- %s" % astr
