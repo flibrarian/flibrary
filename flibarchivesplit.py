@@ -3,7 +3,7 @@ import pymysql
 from flibdefs import *
 from flibcommon import *
 
-GENRES_TO_IGNORE = ('love_short', 'love_sf', 'love_detective', 'love_hard', 'love_contemporary', 'love_erotica', 'fanfiction', 'sf_litrpg', 'popadancy')
+GENRES_TO_IGNORE = ('love_short', 'love_sf', 'love_detective', 'love_hard', 'love_erotica', 'fanfiction', 'sf_litrpg', 'popadancy')
 METAS_TO_SPLIT = ('Проза', 'Фантастика', 'Наука, Образование', 'Поэзия', 'Дом и семья', 'Детективы и Триллеры', 'Приключения', 'Документальная литература', 'Религия, духовность, эзотерика')
 
 def load_archive(name):
