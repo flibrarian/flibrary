@@ -304,31 +304,13 @@ def process_characters(s, translit):
 	return trans
 
 def get_display_sequence(book):
-	sequences_to_skip = ['любимые книги льва толстого',
-		'антология детской литературы',
-		'антология восточной литературы',
-		'антология поэзии',
-		'антология фантастики',
-		'антология детектива',
-		'антология ужасов',
-		'антология приключений',
-		'антология зарубежной классики',
-		'антология любовного романа',
-		'антология научно-популярной литературы',
-		'антология о животных и природе',
-		'антология юмора',
-		'антология русской классики',
-		'антология современной прозы',
-		'антология духовной мысли',
-		'антология советской литературы',
-		'антология военной литературы',
-		'антология романса',
-		'антология сказок',
-		'антология драматургии',
-		'антология мистики и фантастики']
+	sequences_to_skip = ['любимые книги льва толстого']
 	for seq in book.description.sequences + book.description.psequences:
 		if seq.number and seq.number.isdigit() and int(seq.number) > 0:
 			skip = False
+			if seq.name.lower().startswith('антология ') and int(seq.number) > 1800:
+				skip = True
+				continue
 			for ss in sequences_to_skip:
 				if ss in seq.name.lower():
 					skip = True
