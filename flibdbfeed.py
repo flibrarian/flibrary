@@ -136,11 +136,12 @@ def load_sql_book(n, cur):
 	cur.execute("SELECT Title FROM libbook WHERE BookId=%d" % n)
 	if not cur.fetchone():
 		return None
-	cur.execute("SELECT Title, Lang, Year, FileSize, Pages FROM libbook WHERE BookId=%d" % n)
-	title, lang, year, filesize, pages = cur.fetchone()
+	cur.execute("SELECT Title, Lang, Year, FileSize, keywords, Pages FROM libbook WHERE BookId=%d" % n)
+	title, lang, year, filesize, keywords, pages = cur.fetchone()
 	title = title
 	lang = lang
 	year = None if year == 0 else str(year)
+	selfpub = 'самиздат' in keywords.lower()
 	
 	authors = []
 	translators = []
@@ -205,13 +206,13 @@ def load_sql_book(n, cur):
 			seq_ids.append(sid)
 	
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
-	return Book(n, description, '', pages), filesize, author_ids, translator_ids, seq_ids, pseq_ids
+	return Book(n, description, '', pages), filesize, author_ids, translator_ids, seq_ids, pseq_ids, selfpub
 
 def write_feeds(cur, ids, feed_path, flib_url):
 	genremap = load_genremap(cur)
 	cats = {}
 	for n in ids:
-		book, fsize, aids, tids, sids, psids = load_sql_book(n, cur)
+		book, fsize, aids, tids, sids, psids, selfpub = load_sql_book(n, cur)
 		if book:
 			ignore_book = False
 			for g in GENRES_TO_IGNORE:
@@ -222,7 +223,7 @@ def write_feeds(cur, ids, feed_path, flib_url):
 				continue
 			anno = get_annotation(book.id, cur)
 			cat = get_category(book, genremap)
-			selfpub = 'network_literature' in book.description.genres
+			selfpub = selfpub or 'network_literature' in book.description.genres
 			if not cat:
 				cat = 'Без категории'
 			if selfpub:
