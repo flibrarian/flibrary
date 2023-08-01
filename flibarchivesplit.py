@@ -28,10 +28,33 @@ def load_archives(directory):
 		print('архивы прочитаны')
 	return idmap
 
+
+def gather_directory_ids(d, cur, authorset, bookset):
+	for book in d.books:
+		bookset.add(book.id)
+		cur.execute("SELECT AvtorId FROM libavtor WHERE BookId=%d" % book.id)
+		rows = cur.fetchall()
+		if len(rows) > 3:
+			continue
+		for row in rows:
+			authorset.add(row[0])
+	for sd in d.subdirs:
+		gather_directory_ids(sd, cur, authorset, bookset)
+
+
+def gather_library_ids(library, cur, errors):
+	authorset = set()
+	bookset = set()
+	for d in library.root.subdirs:
+		gather_directory_ids(d, cur, authorset, bookset)
+	print('Число книг:', len(bookset))
+	print('Число авторов:', len(authorset))
+	return authorset, bookset
+
 def load_sql_book(book, cur, errors):
 	cur.execute("SELECT Title FROM libbook WHERE BookId=%d" % book.id)
 	if not cur.fetchone():
-		return book
+		return book, []
 	cur.execute("SELECT Title, Lang, Year, Deleted, Pages FROM libbook WHERE BookId=%d" % book.id)
 	title, lang, year, deleted, pages = cur.fetchone()
 	title = title
@@ -42,9 +65,10 @@ def load_sql_book(book, cur, errors):
 		
 	cur.execute("SELECT realId FROM libjoinedbooks WHERE BadId=%d" % book.id)
 	if cur.fetchone():
-		return None
+		return None, []
 	
 	authors = []
+	authorids = []
 	translators = []
 	genres = []
 	sequences = []
@@ -59,6 +83,7 @@ def load_sql_book(book, cur, errors):
 		cur.execute("SELECT FirstName, MiddleName, LastName FROM libavtorname WHERE AvtorId=%d" % aid)
 		author = Author(*[x if x else None for x in cur.fetchone()])
 		sorted_authors.append((author, pos))
+		authorids.append(aid)
 	authors = [a for a, _ in sorted(sorted_authors, key=lambda tup: tup[1])]
 	
 	cur.execute("SELECT TranslatorId, Pos FROM libtranslator WHERE BookId=%d" % book.id)
@@ -106,7 +131,7 @@ def load_sql_book(book, cur, errors):
 		sequences = book.description.sequences
 		psequences = book.description.psequences
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
-	return Book(book.id, description, book.bodyhash, pages)
+	return Book(book.id, description, book.bodyhash, pages), authorids
 
 def load_genremap(cur):
 	genremap = {}
@@ -160,10 +185,12 @@ def extract_book(book, tree, path, translit):
 	with zipfile.ZipFile(new_book_path, "w", zipfile.ZIP_DEFLATED) as zf:
 		zf.writestr(inside_name, etree.tostring(tree, encoding='utf-8', xml_declaration=True, pretty_print=True, method='xml'))
 
-def process_books(idmap, cur, feed_path, translit, errors):
+def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 	genremap = load_genremap(cur)
 	for n in sorted(idmap.keys()):
 		print(n)
+		if n in bookset:
+			continue
 		arch = idmap[n]
 		with zipfile.ZipFile(arch, 'r') as zf:
 			with zf.open("%d.fb2" % n) as f:
@@ -171,7 +198,7 @@ def process_books(idmap, cur, feed_path, translit, errors):
 				book = load_book_info(n, tree)
 				if not book:
 					continue
-				book = load_sql_book(book, cur, errors)
+				book, aids = load_sql_book(book, cur, errors)
 				if not book:
 					continue
 				if book.description.lang != 'ru':
@@ -189,6 +216,14 @@ def process_books(idmap, cur, feed_path, translit, errors):
 					cat = 'Без категории'
 				if selfpub:
 					cat += ' (самиздат)'
+				known_author = False
+				if len(aids) <= 3:
+					for aid in aids:
+						if aid in authorset:
+							known_author = True
+							break
+				if known_author:
+					cat += ' [автор в библиотеке]'
 				path = os.path.join(feed_path, cat)
 				extract_book(book, tree, path, translit)
 				
@@ -196,9 +231,9 @@ def process_books(idmap, cur, feed_path, translit, errors):
 def main():
 	errors = []
 	try:
-		[arch_path, translit, host, user, password, database, port] = \
-			read_config_values(['ARCHIVE_PATH', 'TRANSLIT', 'MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE', 'MYSQL_PORT'],
-			[str, bool, str, str, str, str, int],
+		[dumpfile_path, arch_path, translit, host, user, password, database, port] = \
+			read_config_values(['DUMP_FILE_PATH', 'ARCHIVE_PATH', 'TRANSLIT', 'MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE', 'MYSQL_PORT'],
+			[str, str, bool, str, str, str, str, int],
 			errors)
 		if not os.path.exists(arch_path):
 			errors.append("Директория ARCHIVE_PATH (%s) не найдена" % arch_path)
@@ -207,10 +242,12 @@ def main():
 		idmap = load_archives(arch_path)
 		if not idmap:
 			print("Архивы не найдены.")
-			return		
+			return
+		library = read_dump_compressed(dumpfile_path, errors)
 		connection = pymysql.connect(host=host, user=user, password=password, database=database, port=port)
 		with connection.cursor() as cur:
-			process_books(idmap, cur, 'flibfeeds', translit, errors)
+			authorset, bookset = gather_library_ids(library, cur, errors)
+			process_books(idmap, cur, 'flibfeeds', translit, authorset, bookset, errors)
 		connection.close()
 		print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
