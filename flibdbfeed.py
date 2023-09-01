@@ -3,7 +3,7 @@ import pymysql
 from flibdefs import *
 from flibcommon import *
 
-GENRES_TO_IGNORE = ('love_short', 'love_sf', 'love_detective', 'love_hard', 'love_erotica', 'fanfiction', 'sf_litrpg', 'popadancy')
+GENRES_TO_IGNORE = ('love_short', 'love_sf', 'love_detective', 'love_hard', 'love_erotica', 'fanfiction', 'sf_litrpg')
 METAS_TO_SPLIT = ('Проза', 'Фантастика', 'Наука, Образование', 'Поэзия', 'Дом и семья', 'Детективы и Триллеры', 'Приключения', 'Документальная литература', 'Религия, духовность, эзотерика')
 
 BOOK_FEED_GENRE_TEMPLATE = '<a href="#" class="genre" name="%s">%s</a>'
@@ -52,6 +52,28 @@ PAGE_TEMPLATE = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "htt
 </div>
 </body></html>
 '''
+
+def gather_directory_ids(d, cur, authorset, bookset):
+	for book in d.books:
+		bookset.add(book.id)
+		cur.execute("SELECT AvtorId FROM libavtor WHERE BookId=%d" % book.id)
+		rows = cur.fetchall()
+		if len(rows) > 3:
+			continue
+		for row in rows:
+			authorset.add(row[0])
+	for sd in d.subdirs:
+		gather_directory_ids(sd, cur, authorset, bookset)
+
+
+def gather_library_ids(library, cur, errors):
+	authorset = set()
+	bookset = set()
+	for d in library.root.subdirs:
+		gather_directory_ids(d, cur, authorset, bookset)
+	print('Число книг:', len(bookset))
+	print('Число авторов:', len(authorset))
+	return authorset, bookset
 
 def load_genremap(cur):
 	genremap = {}
@@ -208,7 +230,7 @@ def load_sql_book(n, cur):
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
 	return Book(n, description, '', pages), filesize, author_ids, translator_ids, seq_ids, pseq_ids, selfpub
 
-def write_feeds(cur, ids, feed_path, flib_url):
+def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 	genremap = load_genremap(cur)
 	cats = {}
 	for n in ids:
@@ -228,6 +250,14 @@ def write_feeds(cur, ids, feed_path, flib_url):
 				cat = 'Без категории'
 			if selfpub:
 				cat += ' (самиздат)'
+			known_author = False
+			if len(aids) <= 3:
+				for aid in aids:
+					if aid in authorset:
+						known_author = True
+						break
+			if known_author:
+				cat += ' [автор в библиотеке]'
 			if not cat in cats.keys():
 				cats[cat] = []
 			cats[cat].append((book, anno, fsize, aids, tids, sids, psids))
@@ -269,8 +299,9 @@ def main():
 		library = read_dump_compressed(dumpfile_path, errors)
 		max_dump_n = get_max_n(library.root)
 		with connection.cursor() as cur:
+			authorset, bookset = gather_library_ids(library, cur, errors)
 			ids = get_ids(cur, max_dump_n)
-			write_feeds(cur, ids, 'flibfeeds', flib_url)
+			write_feeds(cur, ids, 'flibfeeds', flib_url, authorset, bookset)
 		connection.close()
 		print_header('ВСЁ СДЕЛАНО')
 	except BaseException as e:
