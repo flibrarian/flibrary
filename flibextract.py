@@ -24,7 +24,8 @@ def extract_book(book, tree, path, extractdata):
 
 	extractdata.failed_books.append(new_book_path)
 	with zipfile.ZipFile(new_book_path, "w", zipfile.ZIP_DEFLATED) as zf:
-		zf.writestr(inside_name, etree.tostring(tree, encoding='utf-8', xml_declaration=True, pretty_print=True, method='xml'))
+		info = zipfile.ZipInfo(filename=inside_name, date_time=(1980, 1, 1, 0, 0, 0))
+		zf.writestr(info, etree.tostring(tree, encoding='utf-8', xml_declaration=True, pretty_print=True, method='xml'))
 	del extractdata.failed_books[-1]
 
 	if body_hash(tree) != book.bodyhash:
