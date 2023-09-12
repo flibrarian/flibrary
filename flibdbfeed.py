@@ -58,7 +58,7 @@ def gather_directory_ids(d, cur, authorset, bookset):
 		bookset.add(book.id)
 		cur.execute("SELECT AvtorId FROM libavtor WHERE BookId=%d" % book.id)
 		rows = cur.fetchall()
-		if len(rows) > 3:
+		if len(rows) > 2:
 			continue
 		for row in rows:
 			authorset.add(row[0])
@@ -230,6 +230,13 @@ def load_sql_book(n, cur):
 	description = Description(title, authors, translators, genres, sequences, psequences, lang, year)
 	return Book(n, description, '', pages), filesize, author_ids, translator_ids, seq_ids, pseq_ids, selfpub
 
+def is_replacement(cur, n, bookset):
+	cur.execute("SELECT BadId FROM libjoinedbooks WHERE realId=%d" % n)
+	for bn in cur.fetchall():
+		if bn[0] in bookset:
+			return True
+	return False
+
 def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 	genremap = load_genremap(cur)
 	cats = {}
@@ -250,14 +257,15 @@ def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 				cat = 'Без категории'
 			if selfpub:
 				cat += ' (самиздат)'
-			known_author = False
-			if len(aids) <= 3:
-				for aid in aids:
-					if aid in authorset:
-						known_author = True
-						break
-			if known_author:
-				cat += ' [автор в библиотеке]'
+			if is_replacement(cur, n, bookset):
+					cat += ' [замена]'
+				elif len(aids) > 2:
+					cat += ' [сборник]'
+				else:
+					for aid in aids:
+						if aid in authorset:
+							cat += ' [автор в библиотеке]'
+							break
 			if not cat in cats.keys():
 				cats[cat] = []
 			cats[cat].append((book, anno, fsize, aids, tids, sids, psids))

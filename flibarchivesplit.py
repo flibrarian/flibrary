@@ -34,7 +34,7 @@ def gather_directory_ids(d, cur, authorset, bookset):
 		bookset.add(book.id)
 		cur.execute("SELECT AvtorId FROM libavtor WHERE BookId=%d" % book.id)
 		rows = cur.fetchall()
-		if len(rows) > 3:
+		if len(rows) > 2:
 			continue
 		for row in rows:
 			authorset.add(row[0])
@@ -185,6 +185,13 @@ def extract_book(book, tree, path, translit):
 	with zipfile.ZipFile(new_book_path, "w", zipfile.ZIP_DEFLATED) as zf:
 		zf.writestr(inside_name, etree.tostring(tree, encoding='utf-8', xml_declaration=True, pretty_print=True, method='xml'))
 
+def is_replacement(cur, n, bookset):
+	cur.execute("SELECT BadId FROM libjoinedbooks WHERE realId=%d" % n)
+	for bn in cur.fetchall():
+		if bn[0] in bookset:
+			return True
+	return False
+
 def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 	genremap = load_genremap(cur)
 	for n in sorted(idmap.keys()):
@@ -216,17 +223,17 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 					cat = 'Без категории'
 				if selfpub:
 					cat += ' (самиздат)'
-				known_author = False
-				if len(aids) <= 3:
+				if is_replacement(cur, n, bookset):
+					cat += ' [замена]'
+				elif len(aids) > 2:
+					cat += ' [сборник]'
+				else:
 					for aid in aids:
 						if aid in authorset:
-							known_author = True
+							cat += ' [автор в библиотеке]'
 							break
-				if known_author:
-					cat += ' [автор в библиотеке]'
 				path = os.path.join(feed_path, cat)
 				extract_book(book, tree, path, translit)
-				
 
 def main():
 	errors = []
