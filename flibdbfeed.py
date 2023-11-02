@@ -256,7 +256,10 @@ def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 			if not cat:
 				cat = 'Без категории'
 			if selfpub:
-				cat += ' (самиздат)'
+				if book.description.translators:
+					cat += ' (самиздат-перевод)'
+				else:
+					cat += ' (самиздат)'
 			if is_replacement(cur, n, bookset):
 					cat += ' [замена]'
 				elif len(aids) > 2:

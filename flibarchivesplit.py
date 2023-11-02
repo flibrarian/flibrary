@@ -222,7 +222,10 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 				if not cat:
 					cat = 'Без категории'
 				if selfpub:
-					cat += ' (самиздат)'
+					if book.description.translators:
+						cat += ' (самиздат-перевод)'
+					else:
+						cat += ' (самиздат)'
 				if is_replacement(cur, n, bookset):
 					cat += ' [замена]'
 				elif len(aids) > 2:
