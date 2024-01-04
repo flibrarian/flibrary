@@ -253,6 +253,7 @@ def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 			anno = get_annotation(book.id, cur)
 			cat = get_category(book, genremap)
 			selfpub = selfpub or 'network_literature' in book.description.genres
+			selfpub = selfpub or '(СИ)' in book.description.title
 			if not cat:
 				cat = 'Без категории'
 			if selfpub:

@@ -218,6 +218,7 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 				if ignore_book:
 					continue
 				selfpub = is_selfpub(tree) or 'network_literature' in book.description.genres
+				selfpub = selfpub or '(СИ)' in book.description.title
 				cat = get_category(book, genremap)
 				if not cat:
 					cat = 'Без категории'
