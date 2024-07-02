@@ -144,15 +144,18 @@ def write_cat_feed(content, cat_path, cat_name, genremap, flib_url):
 def get_category(book, genremap):
 	if not book.description.genres:
 		return None
+	meta = None
+	genre = None
 	for g in book.description.genres:
-		if g not in genremap.keys():
+		if g not in genremap.keys() or (meta and meta != 'Прочее'):
 			continue
-		meta = genremap[g][1]
-		if meta in METAS_TO_SPLIT:
-			return '%s - %s' % (meta, genremap[g][0])
-		else:
-			return meta
-	return None
+		genre, meta = genremap[g]
+	if meta is None or genre is None:
+		return None
+	if meta in METAS_TO_SPLIT:
+		return '%s - %s' % (meta, genre)
+	else:
+		return meta
 
 def load_sql_book(n, cur):
 	cur.execute("SELECT Title FROM libbook WHERE BookId=%d" % n)
