@@ -5,6 +5,7 @@ from collections import namedtuple
 from lxml import etree
 from flibdefs import *
 
+
 def ini_path():
 	if len(sys.argv) > 1:
 		return sys.argv[1]
@@ -205,6 +206,53 @@ def load_annotation(tree):
 	if len(anno_list) == 0:
 		return None
 	return etree.tostring(anno_list[0], encoding='unicode', method='xml')
+
+def load_cover(tree):
+	root = tree.getroot()
+	nss = root.nsmap
+	format4 = "%s/%s/%s/%s"
+	
+	cover_list = root.findall(format4 % (DESCRIPTION_PATH, TITLE_INFO_TAG, COVER_TAG, IMAGE_TAG), namespaces=nss)
+	if len(cover_list) == 0:
+		return None
+	for key in cover_list[0].keys():
+		if 'href' in key:
+			cover_name = cover_list[0].get(key)
+			break
+	if cover_name and cover_name[0] == '#':
+		cover_name = cover_name[1:]
+		binary_list = root.findall('binary', namespaces=nss)
+		for b in binary_list:
+			bid = b.get('id')
+			btype = b.get('content-type')
+			if bid == cover_name:
+				return ''.join(b.itertext())
+	return None
+
+def get_toc_element_recursive(element, nss):
+	title = ''
+	children = []
+	title_list = element.findall(TITLE_TAG, namespaces=nss)
+	if title_list:
+		title = ' '.join(title_list[0].itertext())
+	section_list = element.findall(SECTION_TAG, namespaces=nss)
+	for s in section_list:
+		children.append(get_toc_element_recursive(s, nss))
+	return title, children
+
+def get_toc(tree):
+	root = tree.getroot()
+	nss = root.nsmap
+	toc_root = []
+	body_list = root.findall(BODY_PATH, namespaces=nss)
+	section_list = body_list[0].findall(SECTION_TAG, namespaces=nss)
+	for s in section_list:
+		toc_root.append(get_toc_element_recursive(s, nss))
+	return toc_root
+			
+#	section_list = root.findall(format2 % (BODY_PATH, SECTION_TAG), namespaces=nss)
+	
+	
 
 def update_book_info(tree, book):
 	root = tree.getroot()

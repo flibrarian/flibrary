@@ -218,8 +218,6 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 					if g in book.description.genres:
 						ignore_book = True
 						break
-				if ignore_book:
-					continue
 				selfpub = is_selfpub(tree) or 'network_literature' in book.description.genres
 				selfpub = selfpub or '(СИ)' in book.description.title
 				cat = get_category(book, genremap)
@@ -234,11 +232,18 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 					cat += ' [замена]'
 				elif len(aids) > 2:
 					cat += ' [сборник]'
+					for aid in aids:
+						if aid in authorset:
+							ignore_book = False
+							break
 				else:
 					for aid in aids:
 						if aid in authorset:
 							cat += ' [автор в библиотеке]'
+							ignore_book = False
 							break
+				if ignore_book:
+					continue
 				path = os.path.join(feed_path, cat)
 				extract_book(book, tree, path, translit)
 

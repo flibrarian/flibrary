@@ -7,6 +7,7 @@ VERSION = "1.0"
 DEFAULT_INI_PATH = "flibconfig.ini"
 
 DESCRIPTION_PATH = "./description"
+BODY_PATH = "./body"
 
 TITLE_INFO_TAG = "title-info"
 PUBLISH_INFO_TAG = "publish-info"
@@ -19,6 +20,12 @@ SEQUENCE_TAG = "sequence"
 LANG_TAG = "lang"
 YEAR_TAG = "year"
 ANNOTATION_TAG = "annotation"
+COVER_TAG = "coverpage"
+IMAGE_TAG = "image"
+
+
+SECTION_TAG = "section"
+TITLE_TAG = "title"
 
 Directory = namedtuple('Directory', 'name subdirs books')
 Book = namedtuple('Book', 'id description bodyhash pages')
