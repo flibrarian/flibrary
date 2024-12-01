@@ -185,7 +185,10 @@ def update_and_get_more_info(book, cur, fs):
 			if cur.fetchone():
 				continue
 			cur.execute("SELECT Title, Lang, FileType, Deleted, Pages FROM libbook WHERE BookId=%d" % bid)
-			title, lang, filetype, deleted, tmp_pages = cur.fetchone()
+			tmp = cur.fetchone()
+			if not tmp:
+				continue
+			title, lang, filetype, deleted, tmp_pages = tmp
 			if lang.lower() != 'ru':
 				continue
 			cur.execute("SELECT GenreId FROM libgenre WHERE BookId=%d" % bid)
