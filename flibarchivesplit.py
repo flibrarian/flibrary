@@ -155,7 +155,7 @@ def get_category(book, genremap):
 		genre, meta = genremap[g]
 	if meta is None or genre is None:
 		return None
-	if meta in METAS_TO_SPLIT:
+	if meta.lower() in [x.lower() for x in METAS_TO_SPLIT]:
 		return '%s - %s' % (meta, genre)
 	else:
 		return meta

@@ -152,7 +152,7 @@ def get_category(book, genremap):
 		genre, meta = genremap[g]
 	if meta is None or genre is None:
 		return None
-	if meta in METAS_TO_SPLIT:
+	if meta.lower() in [x.lower() for x in METAS_TO_SPLIT]:
 		return '%s - %s' % (meta, genre)
 	else:
 		return meta
@@ -265,14 +265,14 @@ def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 				else:
 					cat += ' (самиздат)'
 			if is_replacement(cur, n, bookset):
-					cat += ' [замена]'
-				elif len(aids) > 2:
-					cat += ' [сборник]'
-				else:
-					for aid in aids:
-						if aid in authorset:
-							cat += ' [автор в библиотеке]'
-							break
+				cat += ' [замена]'
+			elif len(aids) > 2:
+				cat += ' [сборник]'
+			else:
+				for aid in aids:
+					if aid in authorset:
+						cat += ' [автор в библиотеке]'
+						break
 			if not cat in cats.keys():
 				cats[cat] = []
 			cats[cat].append((book, anno, fsize, aids, tids, sids, psids))
