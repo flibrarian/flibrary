@@ -164,6 +164,7 @@ def is_selfpub(tree):
 	root = tree.getroot()
 	nss = root.nsmap
 	format3 = "%s/%s/%s"
+	format4 = "%s/%s/%s/%s"
 	for s in root.findall(format3 % (DESCRIPTION_PATH, PUBLISH_INFO_TAG, 'publisher'), namespaces=nss):
 		if s.text and ('selfpub' in s.text.lower() or 'самиздат' in s.text.lower()):
 			return True
@@ -172,6 +173,12 @@ def is_selfpub(tree):
 			keywords = [x.strip().lower() for x in s.text.split(',')]
 			if 'самиздат' in keywords:
 				return True
+	for s in root.findall(format4 % (DESCRIPTION_PATH, DOCUMENT_INFO_TAG, AUTHOR_TAG, 'home-page'), namespaces=nss):
+		if s.text and ('author.today' in s.text.lower()):
+			return True
+	for s in root.findall(format3 % (DESCRIPTION_PATH, DOCUMENT_INFO_TAG, 'src-url'), namespaces=nss):
+		if s.text and ('author.today' in s.text.lower()):
+			return True
 	return False
 
 def extract_book(book, tree, path, translit):
@@ -194,6 +201,13 @@ def is_replacement(cur, n, bookset):
 		if bn[0] in bookset:
 			return True
 	return False
+
+def author_name(a):
+	s = ''
+	for part in (a.first, a.middle, a.last):
+		if part:
+			s += ' ' + part
+	return s
 
 def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 	genremap = load_genremap(cur)
@@ -228,9 +242,14 @@ def process_books(idmap, cur, feed_path, translit, authorset, bookset, errors):
 						cat += ' (самиздат-перевод)'
 					else:
 						cat += ' (самиздат)'
+				has_multiauthor = False
+				for a in book.description.authors:
+					if 'коллектив авторов' in author_name(a).lower():
+						has_multiauthor = True
+						break
 				if is_replacement(cur, n, bookset):
 					cat += ' [замена]'
-				elif len(aids) > 2:
+				elif len(aids) > 2 or has_multiauthor:
 					cat += ' [сборник]'
 					for aid in aids:
 						if aid in authorset:

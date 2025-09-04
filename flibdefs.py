@@ -11,6 +11,7 @@ BODY_PATH = "./body"
 
 TITLE_INFO_TAG = "title-info"
 PUBLISH_INFO_TAG = "publish-info"
+DOCUMENT_INFO_TAG = "document-info"
 
 BOOK_TITLE_TAG = "book-title"
 AUTHOR_TAG = "author"

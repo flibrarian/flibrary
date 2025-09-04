@@ -240,6 +240,13 @@ def is_replacement(cur, n, bookset):
 			return True
 	return False
 
+def author_name(a):
+	s = ''
+	for part in (a.first, a.middle, a.last):
+		if part:
+			s += ' ' + part
+	return s
+
 def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 	genremap = load_genremap(cur)
 	cats = {}
@@ -264,9 +271,14 @@ def write_feeds(cur, ids, feed_path, flib_url, authorset, bookset):
 					cat += ' (самиздат-перевод)'
 				else:
 					cat += ' (самиздат)'
+			has_multiauthor = False
+			for a in book.description.authors:
+				if 'коллектив авторов' in author_name(a).lower():
+					has_multiauthor = True
+					break
 			if is_replacement(cur, n, bookset):
 				cat += ' [замена]'
-			elif len(aids) > 2:
+			elif len(aids) > 2 or has_multiauthor:
 				cat += ' [сборник]'
 			else:
 				for aid in aids:
