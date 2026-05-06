@@ -145,7 +145,7 @@ def update_and_get_more_info(book, cur, fs):
 		translator_ids = [None for x in book.description.translators]
 		seq_ids = [None for x in book.description.sequences]
 		pseq_ids = [None for x in book.description.psequences]
-		return book, fs, author_ids, translator_ids, seq_ids, pseq_ids
+		return book, fs, author_ids, translator_ids, seq_ids, pseq_ids, []
 	cur.execute("SELECT FileSize, Pages FROM libbook WHERE BookId=%d" % book.id)
 	filesize, pages = cur.fetchone()
 
@@ -285,7 +285,7 @@ def build_toc(toc_list):
 	for title, children in toc_list:
 		if not title:
 			title = '...'
-		s += '<li>%s</li>\n' % title
+		s += '<li>%s</li>\n' % title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 		s += build_toc(children)
 	return '<ul>%s</ul>' % s
 
@@ -323,7 +323,7 @@ def write_cat_feed(content, cat_path, cat_name, genremap, flib_url, bookset):
 					continue
 				book_items = []
 				for title, bid, filetype, b_genres, multiauthor, pages in sorted(books, key=lambda x: (x[4], x[0])):
-					item = title
+					item = title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 					if multiauthor:
 						item = '[СБОРНИК] ' + item
 					item += ' <small>(' + ', '.join([(genremap[g][0] if g in genremap.keys() else g) for g in b_genres]) + ')</small>'

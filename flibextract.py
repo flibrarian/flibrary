@@ -257,7 +257,7 @@ def main():
 			if not idmap:
 				ans = yes_or_no("Архивы не найдены. Продолжить без них?")
 				if not ans:
-					return		
+					return
 			cache_dir = '.flib_cache_' + ini_path().replace('.', '_')
 			cache_path = os.path.join(extract_path, cache_dir)
 			if not os.path.exists(cache_path):
